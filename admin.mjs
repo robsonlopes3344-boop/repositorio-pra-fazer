@@ -1,0 +1,4 @@
+const base=process.env.KEY_SERVER_URL||'',token=process.env.ADMIN_TOKEN||'',cmd=process.argv[2];
+if(!base.startsWith('https://')||token.length<32)throw Error('Defina KEY_SERVER_URL HTTPS e ADMIN_TOKEN.');
+let path,method='GET',body;if(cmd==='list')path='/v1/admin/keys';else if(cmd==='create'){path='/v1/admin/keys';method='POST';body={label:process.argv[3]||'',days:Number(process.argv[4]||30)}}else if(cmd==='revoke'){path='/v1/admin/keys/'+encodeURIComponent(process.argv[3]||'')+'/revoke';method='POST';body={}}else throw Error('Use: node admin.mjs list | create NOME DIAS | revoke ID');
+const r=await fetch(base.replace(/\/$/,'')+path,{method,headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(15000)});console.log(JSON.stringify(await r.json(),null,2));if(!r.ok)process.exitCode=1;

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: collins-key-service
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_TOKEN
+        sync: false
