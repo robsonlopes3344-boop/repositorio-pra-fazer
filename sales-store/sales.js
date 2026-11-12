@@ -23,11 +23,11 @@ module.exports = function setupSales({app, pool, discord}) {
     } catch(e){await c.query('ROLLBACK');throw e} finally {c.release()}
   }
   async function release(id){const c=await pool.connect();try{await c.query('BEGIN');const o=(await c.query("UPDATE store_private.store_orders SET status='failed' WHERE id=$1 AND status='creating' RETURNING product_id",[id])).rows[0];if(o)await c.query('UPDATE store_private.store_products SET stock=stock+1 WHERE id=$1',[o.product_id]);await c.query('COMMIT')}catch(e){await c.query('ROLLBACK');throw e}finally{c.release()}}
-  async function buy(i){
+  async function buy(i, productId){
     if(!configured())return i.reply({content:'As compras ainda não foram configuradas. Procure a equipe.',ephemeral:true});
     await i.deferReply({ephemeral:true}); let order; let checkoutAttempted=false;
     try{
-      order=await reserve(i.values[0],i.user.id,i.guildId);
+      order=await reserve(productId,i.user.id,i.guildId);
       const webhook = new URL('/webhook/infinitepay',process.env.PUBLIC_URL).href;
       checkoutAttempted=true;
       const created=await call('/links',{handle:process.env.INFINITEPAY_HANDLE,order_nsu:order.id,items:[{quantity:1,price:order.product.price,description:order.product.name}],webhook_url:webhook,options:{single_payment:true,require_delivery_address:false,valid_until:new Date(Date.now()+60*60*1000).toISOString()}});
@@ -42,7 +42,7 @@ module.exports = function setupSales({app, pool, discord}) {
       await i.editReply({content:`Seu pedido foi criado: ${ch}.`});
     }catch(e){console.error('Pedido:',e.message);if(order && !checkoutAttempted) await release(order.id).catch(()=>{});await i.editReply({content:order?'Não foi possível concluir o ticket. Consulte a equipe antes de tentar novamente.':'Não foi possível abrir o pedido: '+e.message})}
   }
-  discord.on('interactionCreate',i=>{if(i.isStringSelectMenu()&&i.customId==='store:select'&&i.guildId===process.env.DISCORD_GUILD_ID)buy(i).catch(e=>console.error('Compra:',e.message))});
+  discord.on('interactionCreate',i=>{if(i.guildId!==process.env.DISCORD_GUILD_ID)return; if(i.isStringSelectMenu()&&i.customId==='store:select')buy(i,i.values[0]).catch(e=>console.error('Compra:',e.message));else if(i.isButton()&&/^store:buy:\d+$/.test(i.customId))buy(i,i.customId.slice(10)).catch(e=>console.error('Compra:',e.message))});
   app.post('/webhook/infinitepay',async(req,res)=>{
     try{
       const {order_nsu,transaction_nsu,invoice_slug,slug}=req.body||{};const invoice=invoice_slug||slug;
