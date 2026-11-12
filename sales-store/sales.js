@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const {ChannelType, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder} = require('discord.js');
 const endpoint = 'https://api.checkout.infinitepay.io';
-module.exports = function setupSales({app, pool, discord}) {
+module.exports = function setupSales({app, pool, discord, refreshProductCards}) {
   const configured = () => process.env.INFINITEPAY_API_KEY && process.env.INFINITEPAY_HANDLE && /^https:\/\//.test(process.env.PUBLIC_URL || '');
   async function call(path, data) {
     const resp = await fetch(endpoint + path, {method:'POST',headers:{'Content-Type':'application/json','X-Api-Key':process.env.INFINITEPAY_API_KEY},body:JSON.stringify(data),signal:AbortSignal.timeout(12000)});
@@ -28,6 +28,7 @@ module.exports = function setupSales({app, pool, discord}) {
     await i.deferReply({ephemeral:true}); let order; let checkoutAttempted=false;
     try{
       order=await reserve(productId,i.user.id,i.guildId);
+      if(refreshProductCards){const latest=(await pool.query('SELECT * FROM store_private.store_products WHERE id=$1',[order.product.id])).rows[0];if(latest)await refreshProductCards(latest).catch(e=>console.error('Atualização do cartão:',e.message))}
       const webhook = new URL('/webhook/infinitepay',process.env.PUBLIC_URL).href;
       checkoutAttempted=true;
       const created=await call('/links',{handle:process.env.INFINITEPAY_HANDLE,order_nsu:order.id,items:[{quantity:1,price:order.product.price,description:order.product.name}],webhook_url:webhook,options:{single_payment:true,require_delivery_address:false,valid_until:new Date(Date.now()+60*60*1000).toISOString()}});
