@@ -143,7 +143,7 @@ app.post('/v1/register', limit, async (req, res) => {
   }
   try {
     const passwordHash = await makePassword(password);
-    const result = await backend({ op: 'register', username, passwordHash, keyHash: hash(key), deviceHash });
+    const result = await backend({ op: 'register', username, passwordHash, keyHash: hash(key), deviceHash, product: 'fivem' });
     return res.status(result.created ? 201 : 409).json({ ok: result.created === true });
   } catch {
     return res.status(503).json({ ok: false });
@@ -226,16 +226,32 @@ app.get('/v1/admin/keys', limit, authorized, async (_req, res) => {
 app.post('/v1/admin/keys', limit, authorized, async (req, res) => {
   const days = req.body?.days ?? 30;
   const label = req.body?.label ?? '';
-  if (!Number.isInteger(days) || days < 1 || days > 3650 || typeof label !== 'string' || label.length > 100) {
+  const product = req.body?.product ?? 'roblox';
+  if (!Number.isInteger(days) || days < 1 || days > 3650 || typeof label !== 'string' || label.length > 100 || !['roblox','fivem'].includes(product)) {
     return res.status(400).json({ error: 'dados invalidos' });
   }
   try {
     const key = 'COLL-' + crypto.randomBytes(12).toString('hex').toUpperCase();
-    const result = await backend({ op: 'create', keyHash: hash(key), keyCiphertext: sealLicenseKey(key), label, days });
+    const result = await backend({ op: 'create', keyHash: hash(key), keyCiphertext: sealLicenseKey(key), label, days, product });
     res.status(201).json({ ...result, key });
   } catch {
     res.status(503).json({ error: 'banco indisponivel' });
   }
+});
+
+app.post('/v1/admin/keys/batch', limit, authorized, async (req, res) => {
+  const { count, days, product, label = '' } = req.body || {};
+  if (!Number.isInteger(count) || count < 1 || count > 100 ||
+      !Number.isInteger(days) || days < 1 || days > 3650 ||
+      !['roblox','fivem'].includes(product) || typeof label !== 'string' || label.length > 100)
+    return res.status(400).json({ error: 'dados invalidos' });
+  try {
+    const keys = Array.from({ length: count }, () => 'COLL-' + crypto.randomBytes(12).toString('hex').toUpperCase());
+    const result = await backend({ op: 'createBatch', product, days, label,
+      keys: keys.map(key => ({ keyHash: hash(key), keyCiphertext: sealLicenseKey(key) })) });
+    if (result.created !== count) return res.status(503).json({ error: 'geracao incompleta' });
+    return res.status(201).json({ keys });
+  } catch { return res.status(503).json({ error: 'banco indisponivel' }); }
 });
 
 app.post('/v1/admin/keys/:id/rotate-key', limit, authorized, async (req, res) => {
