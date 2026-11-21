@@ -256,6 +256,16 @@ app.post('/v1/admin/keys/batch', limit, authorized, async (req, res) => {
   } catch { return res.status(503).json({ error: 'banco indisponivel' }); }
 });
 
+app.post('/v1/admin/keys/delete-product', limit, authorized, async (req, res) => {
+  const product = req.body?.product;
+  if (!['roblox', 'fivem'].includes(product) || req.body?.confirm !== product.toUpperCase())
+    return res.status(400).json({ error: 'confirme o produto' });
+  try {
+    const result = await backend({ op: 'deleteProduct', product });
+    return res.json(result);
+  } catch { return res.status(503).json({ error: 'banco indisponivel' }); }
+});
+
 app.post('/v1/admin/keys/:id/rotate-key', limit, authorized, async (req, res) => {
   if (!validId(req.params.id)) return res.status(400).json({ error: 'id invalido' });
   try {
