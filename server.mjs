@@ -210,9 +210,11 @@ app.post('/v1/session/verify', limit, async (req, res) => {
   }
 });
 
-app.get('/v1/admin/keys', limit, authorized, async (_req, res) => {
+app.get('/v1/admin/keys', limit, authorized, async (req, res) => {
   try {
-    const rows = await backend({ op: 'list' });
+    const offset = Number(req.query.offset || 0);
+    if (!Number.isInteger(offset) || offset < 0 || offset > 100000) return res.status(400).json({ error: 'offset invalido' });
+    const rows = await backend({ op: 'list', offset });
     res.json(rows.map(row => {
       const key = openLicenseKey(row.key_ciphertext);
       const { key_ciphertext: _hidden, ...safe } = row;
