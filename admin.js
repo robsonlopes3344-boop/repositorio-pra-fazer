@@ -208,12 +208,24 @@ $("extend").onclick = async () => { if (!selected) return; const value = prompt(
 $("rename").onclick = async () => { if (!selected) return; const label = prompt("Nova identificação:", selected.label || ""); if (label === null) return; try { await action(`/v1/admin/keys/${selected.id}/rename`, { label }, "Identificação atualizada."); } catch (error) { status(error.message, true); } };
 async function createBatch(product) {
   const suffix = product === "fivem" ? "-fivem" : "";
-  const result = await api("/v1/admin/keys/batch", { method: "POST",
-    body: JSON.stringify({ count: Number($("count" + suffix).value), days: Number($("days" + suffix).value), label: $("label" + suffix).value, product }) });
-  (product === "fivem" ? $("newkeys-fivem") : $("newkey")).textContent = result.keys.join("\n");
-  (product === "fivem" ? $("copy-fivem") : $("copy")).classList.remove("hidden");
-  await refresh(); status(result.keys.length + " keys " + product + " geradas.");
+  const count = Number($("count" + suffix).value), days = Number($("days" + suffix).value);
+  if (!Number.isInteger(count) || count < 1 || count > 10000) throw Error("Informe de 1 a 10000 keys.");
+  const label = $("label" + suffix).value;
+  const target = product === "fivem" ? $("newkeys-fivem") : $("newkey");
+  const button = document.querySelector("#create" + suffix + " button[type=submit], #create" + suffix + " button:not([type])");
+  const all = []; if (button) button.disabled = true;
+  try {
+    for (let remaining = count; remaining > 0; remaining -= 100) {
+      const result = await api("/v1/admin/keys/batch", { method: "POST",
+        body: JSON.stringify({ count: Math.min(100, remaining), days, label, product }) });
+      all.push(...result.keys); target.textContent = all.join("\n");
+      status(all.length + " de " + count + " keys geradas...");
+    }
+    (product === "fivem" ? $("copy-fivem") : $("copy")).classList.remove("hidden");
+    await refresh(); status(all.length + " keys " + product + " geradas.");
+  } finally { if (button) button.disabled = false; }
 }
+
 $("create").onsubmit = async event => { event.preventDefault(); try { await createBatch("roblox"); } catch (error) { status(error.message, true); } };
 $("create-fivem").onsubmit = async event => { event.preventDefault(); try { await createBatch("fivem"); } catch (error) { status(error.message, true); } };
 $("copy-fivem").onclick = async () => { try { await navigator.clipboard.writeText($("newkeys-fivem").textContent); status("Keys copiadas."); } catch { status("Copie manualmente.", true); } };
