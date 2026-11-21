@@ -36,7 +36,7 @@
       <article class="metric"><span>PEDIDOS HWID</span><strong id="pending">—</strong><small>Aguardando decisão</small></article>
     </section>
 
-    <h2 class="product-title">Roblox</h2><div class="columns">
+    <div class="section-head product-title"><h2>Roblox</h2><button id="delete-roblox" class="button danger small">Excluir todas as keys Roblox</button></div><div class="columns">
       <section class="card list-card" id="licencas">
         <div class="section-head"><div><h2>Keys Roblox</h2><p>Key real, identificação e conta vinculada</p></div><button id="refresh" class="button ghost small">↻ Atualizar</button></div>
         <div class="filters"><input id="search" type="search" placeholder="Buscar key, identificação, usuário ou ID"><select id="filter"><option value="all">Todos os status</option><option value="active">Ativas</option><option value="blocked">Bloqueadas</option><option value="bound">Vinculadas</option></select></div>
@@ -51,7 +51,7 @@
       </section>
     </div>
 
-    <section class="card reset-card" id="fivem"><h2>Keys FiveM</h2><p>Licenças separadas para o loader.</p><form id="create-fivem" class="batch-form"><input id="count-fivem" type="number" min="1" max="10000" value="1" aria-label="Quantidade" required><input id="label-fivem" maxlength="100" placeholder="Identificação"><input id="days-fivem" type="number" min="1" max="3650" value="30" aria-label="Dias" required><button class="button primary">Gerar keys FiveM</button></form><output id="newkeys-fivem"></output><button id="copy-fivem" class="button ghost hidden">Copiar keys</button><div class="tablewrap"><table><thead><tr><th>KEY / IDENTIFICAÇÃO</th><th>CONTA</th><th>VALIDADE</th><th>STATUS</th><th></th></tr></thead><tbody id="rows-fivem"></tbody></table><div id="empty-fivem" class="empty">Nenhuma key FiveM.</div></div></section><section class="card reset-card" id="resets">
+    <section class="card reset-card" id="fivem"><div class="section-head"><h2>Keys FiveM</h2><button id="delete-fivem" class="button danger small">Excluir todas as keys FiveM</button></div><p>Licenças separadas para o loader.</p><form id="create-fivem" class="batch-form"><input id="count-fivem" type="number" min="1" max="10000" value="1" aria-label="Quantidade" required><input id="label-fivem" maxlength="100" placeholder="Identificação"><input id="days-fivem" type="number" min="1" max="3650" value="30" aria-label="Dias" required><button class="button primary">Gerar keys FiveM</button></form><output id="newkeys-fivem"></output><button id="copy-fivem" class="button ghost hidden">Copiar keys</button><div class="tablewrap"><table><thead><tr><th>KEY / IDENTIFICAÇÃO</th><th>CONTA</th><th>VALIDADE</th><th>STATUS</th><th></th></tr></thead><tbody id="rows-fivem"></tbody></table><div id="empty-fivem" class="empty">Nenhuma key FiveM.</div></div></section><section class="card reset-card" id="resets">
       <div class="section-head"><div><h2>Pedidos de reset de HWID</h2><p>Solicitações feitas por contas vinculadas em um novo computador</p></div><select id="reset-filter"><option value="pending">Pendentes</option><option value="all">Todos</option><option value="approved">Aprovados</option><option value="rejected">Recusados</option></select></div>
       <div id="reset-list" class="reset-list"><div class="empty">Conecte-se para carregar os pedidos.</div></div>
     </section>
