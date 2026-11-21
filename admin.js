@@ -126,7 +126,9 @@ function renderResetRequests() {
 }
 
 async function refresh() {
-  [licenses, resetRequests] = await Promise.all([api("/v1/admin/keys"), api("/v1/admin/reset-requests")]);
+  const all = []; let page;
+  do { page = await api("/v1/admin/keys?offset=" + all.length); all.push(...page); } while (page.length === 500 && all.length < 100000);
+  licenses = all; resetRequests = await api("/v1/admin/reset-requests");
   renderLicenses();
   renderResetRequests();
 }
