@@ -38,6 +38,7 @@ function cell(row, text) {
 function renderLicenses() {
   const tbody = $("rows");
   tbody.replaceChildren();
+  $("rows-fivem").replaceChildren();
   const query = $("search").value.trim().toLowerCase();
   const filter = $("filter").value;
   const visible = licenses.filter(row => [row.id, row.key, row.label, row.username]
@@ -47,7 +48,8 @@ function renderLicenses() {
   $("total").textContent = token ? licenses.length : "—";
   $("active").textContent = token ? licenses.filter(row => !blocked(row)).length : "—";
   $("bound").textContent = token ? licenses.filter(row => row.username).length : "—";
-  $("empty").hidden = visible.length > 0;
+  $("empty").hidden = visible.some(row => row.product !== "fivem");
+  $("empty-fivem").hidden = visible.some(row => row.product === "fivem");
   $("empty").textContent = token ? "Nenhuma licença encontrada." : "Conecte-se para carregar as licenças.";
 
   for (const license of visible) {
@@ -72,7 +74,7 @@ function renderLicenses() {
     button.textContent = "Gerenciar";
     button.onclick = () => openDetails(license);
     actions.append(button);
-    tbody.append(row);
+    (license.product === "fivem" ? $("rows-fivem") : tbody).append(row);
   }
 }
 
@@ -204,7 +206,18 @@ $("reset").onclick = async () => { if (!selected || !confirm("Liberar o vínculo
 $("rotate").onclick = async () => { if (!selected || !confirm("Gerar uma nova key? A key anterior deixará de funcionar para novos cadastros.")) return; try { const result = await api(`/v1/admin/keys/${selected.id}/rotate-key`, { method: "POST", body: "{}" }); $("details").close(); await refresh(); $("newkey").textContent = result.key; $("copy").classList.remove("hidden"); status("Nova key gerada: " + result.key); } catch (error) { status(error.message, true); } };
 $("extend").onclick = async () => { if (!selected) return; const value = prompt("Adicionar quantos dias?", "30"); if (value === null) return; const days = Number(value); if (!Number.isInteger(days) || days < 1 || days > 3650) return status("Informe entre 1 e 3650 dias.", true); try { await action(`/v1/admin/keys/${selected.id}/extend`, { days }, "Validade atualizada."); } catch (error) { status(error.message, true); } };
 $("rename").onclick = async () => { if (!selected) return; const label = prompt("Nova identificação:", selected.label || ""); if (label === null) return; try { await action(`/v1/admin/keys/${selected.id}/rename`, { label }, "Identificação atualizada."); } catch (error) { status(error.message, true); } };
-$("create").onsubmit = async event => { event.preventDefault(); try { const result = await api("/v1/admin/keys", { method: "POST", body: JSON.stringify({ label: $("label").value, days: Number($("days").value) }) }); $("newkey").textContent = result.key; $("copy").classList.remove("hidden"); await refresh(); status("Key criada: " + result.key); } catch (error) { status(error.message, true); } };
+async function createBatch(product) {
+  const suffix = product === "fivem" ? "-fivem" : "";
+  const result = await api("/v1/admin/keys/batch", { method: "POST",
+    body: JSON.stringify({ count: Number($("count" + suffix).value), days: Number($("days" + suffix).value), label: $("label" + suffix).value, product }) });
+  (product === "fivem" ? $("newkeys-fivem") : $("newkey")).textContent = result.keys.join("\n");
+  (product === "fivem" ? $("copy-fivem") : $("copy")).classList.remove("hidden");
+  await refresh(); status(result.keys.length + " keys " + product + " geradas.");
+}
+$("create").onsubmit = async event => { event.preventDefault(); try { await createBatch("roblox"); } catch (error) { status(error.message, true); } };
+$("create-fivem").onsubmit = async event => { event.preventDefault(); try { await createBatch("fivem"); } catch (error) { status(error.message, true); } };
+$("copy-fivem").onclick = async () => { try { await navigator.clipboard.writeText($("newkeys-fivem").textContent); status("Keys copiadas."); } catch { status("Copie manualmente.", true); } };
+
 $("copy").onclick = async () => { try { await navigator.clipboard.writeText($("newkey").textContent); status("Key copiada."); } catch { status("Selecione e copie a key manualmente.", true); } };
 
 renderLicenses();
