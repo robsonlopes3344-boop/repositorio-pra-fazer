@@ -57,7 +57,7 @@ function renderLicenses() {
     const keyCell = cell(row, "");
     const key = document.createElement("strong");
     const label = document.createElement("small");
-    key.textContent = license.key || "Key antiga não recuperável";
+    key.textContent = license.key || "Texto da key não foi salvo";
     key.className = license.key ? "license-key" : "legacy-key";
     label.textContent = (license.label || "Sem identificação") + " · ID #" + license.id;
     keyCell.append(key, label);
@@ -74,6 +74,7 @@ function renderLicenses() {
     button.textContent = "Gerenciar";
     button.onclick = () => openDetails(license);
     actions.append(button);
+    if (!license.key && !license.username) { const replace = document.createElement("button"); replace.className = "button ghost small"; replace.textContent = "Criar substituta"; replace.onclick = () => replaceLegacy(license); actions.append(replace); }
     (license.product === "fivem" ? $("rows-fivem") : tbody).append(row);
   }
 }
@@ -233,6 +234,29 @@ $("create-fivem").onsubmit = async event => { event.preventDefault(); try { awai
 $("copy-fivem").onclick = async () => { try { await navigator.clipboard.writeText($("newkeys-fivem").textContent); status("Keys copiadas."); } catch { status("Copie manualmente.", true); } };
 
 $("copy").onclick = async () => { try { await navigator.clipboard.writeText($("newkey").textContent); status("Key copiada."); } catch { status("Selecione e copie a key manualmente.", true); } };
+
+async function replaceLegacy(license) {
+  if (!confirm("A key antiga deixará de funcionar. Criar uma substituta para #" + license.id + "?")) return;
+  try {
+    const result = await api("/v1/admin/keys/" + license.id + "/rotate-key", { method:"POST", body:"{}" });
+    await refresh();
+    const output = license.product === "fivem" ? $("newkeys-fivem") : $("newkey");
+    output.textContent = result.key;
+    (license.product === "fivem" ? $("copy-fivem") : $("copy")).classList.remove("hidden");
+    status("Substituta criada para #" + license.id + ". Copie a key exibida.");
+  } catch (error) { status(error.message, true); }
+}
+async function deleteProduct(product) {
+  const count = licenses.filter(row => (row.product || "roblox") === product).length;
+  const typed = prompt("Excluir " + count + " keys " + product.toUpperCase() + " e contas vinculadas? Esta ação é permanente. Digite " + product.toUpperCase() + " para confirmar:");
+  if (typed !== product.toUpperCase()) return;
+  try {
+    const result = await api("/v1/admin/keys/delete-product", { method:"POST", body:JSON.stringify({ product, confirm:typed }) });
+    await refresh(); status(result.deleted + " keys " + product + " excluídas.");
+  } catch (error) { status(error.message, true); }
+}
+$("delete-roblox").onclick = () => deleteProduct("roblox");
+$("delete-fivem").onclick = () => deleteProduct("fivem");
 
 renderLicenses();
 renderResetRequests();
