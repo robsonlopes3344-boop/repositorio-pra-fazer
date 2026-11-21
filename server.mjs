@@ -176,7 +176,7 @@ app.post('/v1/login', limit, async (req, res) => {
       }
       await backend({ op: 'specs', username, deviceHash, shared: req.body.shareSpecs, specs });
     }
-    return res.json({ ok: true, session: issueSession(username, deviceHash) });
+    return res.json({ ok: true, session: issueSession(username, deviceHash), expiresAt: account.expires_at });
   } catch {
     return res.status(503).json({ ok: false });
   }
